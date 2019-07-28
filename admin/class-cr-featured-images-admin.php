@@ -3,7 +3,7 @@
 /**
  * The admin-specific functionality of the plugin.
  *
- * @link       http://www.weblineindia.com
+ * @link       https://github.com/opencartplugin/cr-featured-images.git
  * @since      1.0.0
  *
  * @package    Cr_Featured_Images

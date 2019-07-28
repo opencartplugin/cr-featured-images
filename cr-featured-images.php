@@ -1,16 +1,16 @@
 <?php
 /* Plugin Name: Copy Right Featured Image Posts
- * Plugin URI:  https://google.com/
+ * Plugin URI:  https://github.com/opencartplugin/cr-featured-images.git
  * Description: It will make your featured image posts have a unique picture inside.
  * Version:     1.0.0
  * Author:      Mohamad Farid
- * Author URI:  https://google.com/
+ * Author URI:  https://github.com/opencartplugin
  * License:     GPL v2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain: crfi-basics-plugin
  * Domain Path: /languages
  */
-//Kalau dipanggil langsung, failed
+//if direct call, failed
 if (!defined('WPINC')) {
     die;
 }
@@ -230,128 +230,50 @@ function imagecopymerge_alpha($dst_im, $src_im, $dst_x, $dst_y, $src_x, $src_y, 
 }
 
 function imageResize($max_width, $max_height, $source_file){
-    $imgsize = getimagesize($source_file);
-    $width = $imgsize[0];
-    $height = $imgsize[1];
-    $mime = $imgsize['mime'];
- 
-    switch($mime){
-        case 'image/gif':
-            $image_create = "imagecreatefromgif";
-            $image = "imagegif";
-            break;
- 
-        case 'image/png':
-            $image_create = "imagecreatefrompng";
-            $image = "imagepng";
-            //$quality = 7;
-            break;
- 
-        case 'image/jpeg':
-            $image_create = "imagecreatefromjpeg";
-            $image = "imagejpeg";
-            //$quality = 80;
-            break;
- 
-        default:
-            return false;
-            break;
-    }
-     
+    $fileInfo = getFileInfo($source_file);
     $dst_img = imagecreatetruecolor($max_width, $max_height);
-    $src_img = $image_create($source_file);
+    $src_img = $fileInfo['imagecreate']($source_file);
 	imagealphablending($dst_img, false);
 	//$col = imagecolorallocatealpha($dst_img, 0, 0, 0, 127);
 		 
-    $width_new = $height * $max_width / $max_height;
-    $height_new = $width * $max_height / $max_width;
+    $width_new = $fileInfo['height'] * $max_width / $max_height;
+    $height_new = $fileInfo['width'] * $max_height / $max_width;
     //if the new width is greater than the actual width of the image, then the height is too large and the rest cut off, or vice versa
-    if($width_new > $width){
+    if($width_new > $fileInfo['width']){
         //cut point by height
-        $h_point = (($height - $height_new) / 2);
+        $h_point = (($fileInfo['height'] - $height_new) / 2);
         //copy image
-        imagecopyresampled($dst_img, $src_img, 0, 0, 0, $h_point, $max_width, $max_height, $width, $height_new);
+        imagecopyresampled($dst_img, $src_img, 0, 0, 0, $h_point, $max_width, $max_height, $fileInfo['width'], $height_new);
     }else{
         //cut point by width
-        $w_point = (($width - $width_new) / 2);
-        imagecopyresampled($dst_img, $src_img, 0, 0, $w_point, 0, $max_width, $max_height, $width_new, $height);
+        $w_point = (($fileInfo['width'] - $width_new) / 2);
+        imagecopyresampled($dst_img, $src_img, 0, 0, $w_point, 0, $max_width, $max_height, $width_new, $fileInfo['height']);
     }
-    return $dst_img; 
-    /*$image($dst_img, $dst_dir, $quality);
- 
-    if($dst_img)imagedestroy($dst_img);
-    if($src_img)imagedestroy($src_img);*/
+	return $dst_img; 
 }
 
-function image_handler($source_image, $destination, $tn_w = 100, $tn_h = 100,$quality = 80, $wmsource = false) {
-	// The getimagesize functions provides an "imagetype" string contstant, which can be passed to the image_type_to_mime_type function for the corresponding mime type
-	$info = getimagesize($source_image);
-	$imgtype = image_type_to_mime_type($info[2]);
-	// Then the mime type can be used to call the correct function to generate an image resource from the provided image
-	switch ($imgtype) {
-	case 'image/jpeg':
-	  $source = imagecreatefromjpeg($source_image);
-	  break;
-	case 'image/gif':
-	  $source = imagecreatefromgif($source_image);
-	  break;
-	case 'image/png':
-	  $source = imagecreatefrompng($source_image);
-	  break;
-	default:
-	  die('Invalid image type.');
+add_action( 'admin_print_scripts', 'admin_print_scripts', 10, 2 );
+
+	/**
+	 * Admin inline scripts.
+	 * 
+	 * @global $pagenow
+	 */
+	function admin_print_scripts() {
+		global $pagenow;
+
+		if ( $pagenow === 'upload.php' ) {
+			//if ( $this->options['watermark_image']['manual_watermarking'] == 1 ) {
+				?>
+				<script type="text/javascript">
+					jQuery( function( $ ) {
+						$( document ).ready( function() {
+
+							$( "<option>" ).val( "applywatermark" ).text( "<?php echo 'Apply watermark'; ?>" ).appendTo( "select[name='action'], select[name='action2']" );
+						});
+					});
+				</script>
+				<?php
+			//}
+		}
 	}
-	// Now, we can determine the dimensions of the provided image, and calculate the width/height ratio
-	$src_w = imagesx($source);
-	$src_h = imagesy($source);
-	$src_ratio = $src_w/$src_h;
-	// Now we can use the power of math to determine whether the image needs to be cropped to fit the new dimensions, and if so then whether it should be cropped vertically or horizontally. We're just going to crop from the center to keep this simple.
-	if ($tn_w/$tn_h > $src_ratio) {
-	$new_h = $tn_w/$src_ratio;
-	$new_w = $tn_w;
-	} else {
-	$new_w = $tn_h*$src_ratio;
-	$new_h = $tn_h;
-	}
-	$x_mid = $new_w/2;
-	$y_mid = $new_h/2;
-	// Now actually apply the crop and resize!
-	$newpic = imagecreatetruecolor(round($new_w), round($new_h));
-	imagecopyresampled($newpic, $source, 0, 0, 0, 0, $new_w, $new_h, $src_w, $src_h);
-	$final = imagecreatetruecolor($tn_w, $tn_h);
-	imagecopyresampled($final, $newpic, 0, 0, ($x_mid-($tn_w/2)), ($y_mid-($tn_h/2)), $tn_w, $tn_h, $tn_w, $tn_h);
-	// If a watermark source file is specified, get the information about the watermark as well. This is the same thing we did above for the source image.
-	if($wmsource) {
-	$info = getimagesize($wmsource);
-	$imgtype = image_type_to_mime_type($info[2]);
-	switch ($imgtype) {
-	  case 'image/jpeg':
-		$watermark = imagecreatefromjpeg($wmsource);
-		break;
-	  case 'image/gif':
-		$watermark = imagecreatefromgif($wmsource);
-		break;
-	  case 'image/png':
-		$watermark = imagecreatefrompng($wmsource);
-		break;
-	  default:
-		die('Invalid watermark type.');
-	}
-	// Determine the size of the watermark, because we're going to specify the placement from the top left corner of the watermark image, so the width and height of the watermark matter.
-	$wm_w = imagesx($watermark);
-	$wm_h = imagesy($watermark);
-	// Now, figure out the values to place the watermark in the bottom right hand corner. You could set one or both of the variables to "0" to watermark the opposite corners, or do your own math to put it somewhere else.
-	$wm_x = $tn_w - $wm_w;
-	$wm_y = $tn_h - $wm_h;
-	// Copy the watermark onto the original image
-	// The last 4 arguments just mean to copy the entire watermark
-	imagecopy($final, $watermark, $wm_x, $wm_y, 0, 0, $tn_w, $tn_h);
-	}
-	// Ok, save the output as a jpeg, to the specified destination path at the desired quality.
-	// You could use imagepng or imagegif here if you wanted to output those file types instead.
-	if(Imagejpeg($final,$destination,$quality)) {
-	return true;
-	}
-	// If something went wrong
-	return false;
-  }

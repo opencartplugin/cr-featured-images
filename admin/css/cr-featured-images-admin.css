@@ -2,3 +2,16 @@
  * All of the CSS for your admin-specific functionality should be
  * included in this file.
  */
+ .wplike-slider span.middle { width: 150px; }
+ .wplike-slider span.left { margin-right: 10px; }
+ .wplike-slider span.right { margin-left: 10px; }
+ 
+ .iw-current-value {
+	position: relative;
+	bottom: 25px;
+	display: inline-block;
+	width: 17px;
+	text-align: center;
+	margin-left: -.6em;
+	font-size: 0.9em;
+}
